@@ -1,56 +1,67 @@
-# Instalaciones necesarias
+# AUTORES:
+# BRYAN XAVIER QUILUMBA FARINANGO
+# JESÚS MARÍA RODRÍGUEZ GARCÍA
+# PABLO MANUEL RODRÍGUEZ SOSA
 
-#pip install selenium
+# Este programa es el encargado de extraer los datos (en crudo) de los vehículos.
+# La fuente desde la que se extraen es la web de venta de coches de segunda mano 'AutoHero'
+# Para la extracción empleamos las librerías de python:
+#   - BeautifulSoup: Encargada de la búsqueda por clases html de los datos de los coches en la web
+#   - Selenium: Encargada de recorrer e interactuar con la web realizando scrolls y dando clícks
+# Para la ejecución del programa puede ser necesario: pip install selenium
 
-# Librerias necesarias
-import requests
-from bs4 import BeautifulSoup
-from selenium import webdriver
-import numpy as np
-import time
-import pandas as pd
+# Librerías necesarias
 from selenium.webdriver.common.by import By
+from selenium import webdriver
+from bs4 import BeautifulSoup
+import pandas as pd
+import numpy as np
+import requests
+import time
 
-# Driver para el scraper (cambiar dependiendo del equipo)
+
+# Función que devuelve un drive para el scraping con las configuraciones aplicadas
 def web_driver():
     options = webdriver.ChromeOptions()
-    options.add_argument("--verbose")
-    options.add_argument('--no-sandbox')
-    options.add_argument('--headless')
-    options.add_argument('--disable-gpu')
-    options.add_argument("--window-size=1920, 2160")
-    options.add_argument('--disable-dev-shm-usage')
-    #proxy = "12.345.67.890:1234"
-    #options.add_argument("--proxy-server=%s" % proxy)
+    options.add_argument('--no-sandbox')  # Deshabilita el limitador
+    options.add_argument('--headless')  # Deshabilita la ventana y se realiza en un segundo plano
+    options.add_argument('--disable-gpu')  # Deshabilita la GPU para evitar problemas en algunas webs
+    options.add_argument("--window-size=1920, 2160")  # Tamaño de la ventana (en segundo plano)
+    options.add_argument('--disable-dev-shm-usage')  # Deshabilita los archivos temporales
     return webdriver.Chrome(options=options)
 
-### Scraping
-def scraper(driver, num_scroll):
-    # Se emplea la librería Sellenium para realizar el scraper (hacer scroll y click)
-    # Y para extraer la información de los coches se emple BeautifulShop
 
-    # Tiempo de espera entre scrolls, para que carge bien la pagina
+# Función que realiza la interacción con la web (web scraper) realizando scrolls y aceptando las cookies
+# A su vez se aplica el web scraping obteniendo los datos de los vehículos y devolviéndolos al final
+def scraper(driver, num_scroll):
+    # Se emplea la librería Selenium para realizar el scraper (hacer scroll y clíck)
+    # Y para extraer la información de los coches se emplea BeautifulShop
+
+    # Tiempo de espera entre scrolls, para que cargue bien la página
     scroll_pause_time = 1
 
-    # Contadores y almacenadores
-    numVehiculos = 0
-    pagVehiculos = []
-    totalVehiculos = set()
+    # Conjunto (sin repeticiones) que almacena los vehículos que se vayan encontrando
+    vehiculos = set()
 
     # Al ingresar a la web saltan las cookies. Y estas no dejas hacer scroll
     try:
-        # Se espera a que salgan (si no salen -> aumentar el tiempo)
+        # Se espera a que salga la ventana de aceptar cookies
         time.sleep(3)
-        boton = driver.find_element(By.CLASS_NAME, "button___2R6qU.size-sm___3TKQS.default___1FRAY")
-        boton.click()  # Se aceptan las cookies
+
+        # Se busca el botón y se le da clíck
+        btn = driver.find_element(By.CLASS_NAME, "button___2R6qU.size-sm___3TKQS.default___1FRAY")
+        btn.click()  # Se aceptan las cookies
+
     except:
+        # Si no salen puede ser debido a que el navegador ya tiene en su historial las cookies
+        # También es posible que sea necesario aumentar time.sleep para que le dé tiempo a salir
         print("No saltaron las cookies")
 
     # Web Scraping (aumentar n para extraer más coches)
     n = num_scroll  # numero de scrolls
     i = 1
-
     screen_height = driver.execute_script("return window.screen.height;")
+
     while i <= n:
 
         # Se realiza el scroll para la siguiente página
@@ -59,20 +70,23 @@ def scraper(driver, num_scroll):
         scraperSoup = BeautifulSoup(driver.page_source, 'html.parser')
         # Se sacan los coches de la página actua
         pagVehiculos = scraperSoup.find_all('a', class_='link___2Maxt color-inherit___SyKXO decoration-none___1IENu')
+        # Se añaden al conjunto
         for vehiculo in pagVehiculos:
-            totalVehiculos.add(vehiculo)
+            vehiculos.add(vehiculo)
         i += 1
 
-    # Saca captura de la ultima instancial
-    driver.save_screenshot(f'screen.png')
+    # Saca captura de la ultima instancia
+    # driver.save_screenshot(f'screen.png')
+    # Se cierra el driver (el navegador que estaba en segundo plano)
     driver.quit()
-    return totalVehiculos
 
-### Fuente de los datos
+    return vehiculos
 
-### Funciones que interpretan el html para recopilar la información
+
+# Funciones que interpretan el html para recopilar la información
 def agregar_autohero(link):
     return "https://www.autohero.com" + link
+
 
 def obtener_info_vehiculo_1(vehiculo):
     infoExtra = vehiculo.get('href')
@@ -170,23 +184,34 @@ def obtener_info_vehiculo_1(vehiculo):
 
 # Ejecución
 def main():
-    #driver =  webdriver.Chrome()
+
+    # Fuente de los datos
     url = 'https://www.autohero.com/es/search/'
+
+    # Driver (navegador) que se empleará
     driver = web_driver()
     driver.get(url)
-    totalVehiculos = scraper(driver, 2)
-    print(f"Se han encontrado {len(totalVehiculos)} vehiculos:")
 
+    # Llamada a la función que aplica el web scraping junto al scraper para obtener los vehículos
+    vehiculos = scraper(driver, 150)
+    print(f"Se han encontrado {len(vehiculos)} vehiculos:")
+
+    # Los datos de los vehiculos en html se pasan a un dataframe, todavía en crudos
     df_resultado = pd.DataFrame()
-    for vehiculo in totalVehiculos:
-        df_resultado = pd.concat([df_resultado, obtener_info_vehiculo_1(vehiculo)], ignore_index=True)
+    for vehiculo in vehiculos:
+        try:
+            df_resultado = pd.concat([df_resultado, obtener_info_vehiculo_1(vehiculo)], ignore_index=True)
+        except:
+            print(f'Excepción de datos en {vehiculo.get('href')}')
 
     print(df_resultado)
+
+    # El data frame se exporta a un archivo json
     df_resultado.to_json("datosCrudos.json", "index")
+
 
 if __name__ == "__main__":
     main()
-
 
 # df_resultado['Marca'] = df_resultado['Modelo'].str.split().str[0]
 #
@@ -225,15 +250,13 @@ if __name__ == "__main__":
 
 
 # Utiliza expresiones regulares para extraer el valor numérico
-#df_resultado['Cilindrada'] = df_resultado['Cilindrada'].str.extract('(\d+)', expand=False).astype(int)
+# df_resultado['Cilindrada'] = df_resultado['Cilindrada'].str.extract('(\d+)', expand=False).astype(int)
 
-#df_resultado = df_resultado[column_order]
+# df_resultado = df_resultado[column_order]
 
-#current_date = datetime.now()
-#df_resultado['Edad(Años)'] = (current_date - df_resultado['Primera matriculación']).dt.days // 365
+# current_date = datetime.now()
+# df_resultado['Edad(Años)'] = (current_date - df_resultado['Primera matriculación']).dt.days // 365
 
-#print(df_resultado.dtypes)
+# print(df_resultado.dtypes)
 
-#display(df_resultado)
-
-
+# display(df_resultado)
