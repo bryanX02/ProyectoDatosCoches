@@ -50,7 +50,8 @@ df_resultado = df_resultado[column_order]
 
 current_date = datetime.now()
 df_resultado['Edad(Años)'] = (current_date - df_resultado['Primera matriculación']).dt.days // 365
-print(df_resultado.iloc[0])
-#df_resultado.to_json("datosProcesados.json", orient='index')
+
+# Puede ser necesario instalar las dependencias pyarrow y fastparquet
+df_resultado.to_parquet("datosProcesados.parquet")
 
 
