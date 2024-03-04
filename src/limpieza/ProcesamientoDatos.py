@@ -10,7 +10,7 @@
 # Librerías necesarias
 from datetime import datetime
 import pandas as pd
-#jason
+
 df_resultado = pd.read_json("../adquisicion/datosCrudos.json", orient="index")
 
 df_resultado['Marca'] = df_resultado['Modelo'].str.split().str[0]
