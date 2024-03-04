@@ -11,7 +11,7 @@
 from datetime import datetime
 import pandas as pd
 
-df_resultado = pd.read_json("datosCrudos.json", orient="index")
+df_resultado = pd.read_json("../adquisicion/datosCrudos.json", orient="index")
 
 df_resultado['Marca'] = df_resultado['Modelo'].str.split().str[0]
 
@@ -52,6 +52,6 @@ current_date = datetime.now()
 df_resultado['Edad(Años)'] = (current_date - df_resultado['Primera matriculación']).dt.days // 365
 
 # Puede ser necesario instalar las dependencias pyarrow y fastparquet
-df_resultado.to_parquet("datosProcesados.parquet")
+df_resultado.to_parquet("datosProcesados.parquet", index = 0)
 
 

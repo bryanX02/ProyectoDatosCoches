@@ -87,7 +87,6 @@ def scraper(driver, num_scroll):
 def agregar_autohero(link):
     return "https://www.autohero.com" + link
 
-
 def obtener_info_vehiculo_1(vehiculo):
     infoExtra = vehiculo.get('href')
     nombre_vehiculo = vehiculo.find('h2', class_='title___1TYYE').text.strip()
@@ -131,23 +130,27 @@ def obtener_info_vehiculo_1(vehiculo):
         elif titulo == 'Tracción':
             traccion = valor
 
-    # Iterar sobre la información extra
-    for elemento in specs:
-        try:
-            titulo = elemento.find('div', class_='itemTitle___3GH8k').text.strip()
-        except:
-            continue
-        try:
-            valor = elemento.find('div', class_='body___2uId6').text.strip()
-        except:
-            # Si no se encuentra el elemento 'body___2uId6', se asigna None o se continua con el siguiente elemento
-            valor = np.nan
 
-        # Asignar valores a las variables correspondientes
-        if titulo == 'Cilindrada':
-            cilindrada = valor
-        elif titulo == 'Coche accidentado y reparado':
-            coche_accidentado = valor
+   # Iterar sobre la información extra
+    for elemento in specs:
+      try:
+        titulo = elemento.find('div', class_='itemTitle___3GH8k').text.strip()
+      except:
+          continue
+      try:
+        valor = elemento.find('div', class_='body___2uId6').text.strip()
+      except:
+          # Si no se encuentra el elemento 'body___2uId6', se asigna None o se continua con el siguiente elemento
+          valor = np.nan
+
+      # Asignar valores a las variables correspondientes
+      if titulo == 'Cilindrada':
+          cilindrada = valor
+      elif titulo == 'Coche accidentado y reparado':
+          coche_accidentado = valor
+
+
+
 
     # Imprimir o almacenar la información según sea necesario
     # print(f"Nombre del vehículo: {nombre_vehiculo}")
@@ -164,10 +167,10 @@ def obtener_info_vehiculo_1(vehiculo):
 
     # Crear un DataFrame con una sola fila
     data = {
-        'Nombre del vehículo': nombre_vehiculo,
+        'Modelo': nombre_vehiculo,
         'Precio(€)': precio,
-        'Modelo': modelo,
-        # 'Enlace Autohero': link,
+        'Adicional': modelo,
+        #'Enlace Autohero': link,
         'Primera matriculación': primera_matriculacion,
         'Kilometraje(Km)': kilometraje,
         'Carburante': carburante,
@@ -180,6 +183,7 @@ def obtener_info_vehiculo_1(vehiculo):
     df = pd.DataFrame([data])
 
     return df
+
 
 
 # Ejecución

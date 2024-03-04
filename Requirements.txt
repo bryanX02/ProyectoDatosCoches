@@ -1,0 +1,12 @@
+Requirements
+
+Para poder ejecutar los modulos de adquisición, procesamiento, y exploración de los datos, se necesitan los siguientes requisitos instalados en el sistema:
+
+- Python: Compilador de python junto a las librerias importadas en cada modulo, y especificamente:
+	- Pandas
+	- Numpy
+	- BeautifulSoup
+	- Selenium
+	- Otras dependencias descritas en los modulos
+
+- WebDriver: Se necesita tener el web driver del navegador de Chrome (puede ser suficiente con tener instalado el Chrome).
