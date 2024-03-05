@@ -206,7 +206,7 @@ def main():
         try:
             df_resultado = pd.concat([df_resultado, obtener_info_vehiculo_1(vehiculo)], ignore_index=True)
         except:
-            print(f'Excepción de datos en {vehiculo.get('href')}')
+            print(f"Excepción de datos en {vehiculo.get('href')}")
 
     print(df_resultado)
 
