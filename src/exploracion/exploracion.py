@@ -17,11 +17,11 @@ print(data.select_dtypes(include=["object"]).nunique())
 data_numeric = data.select_dtypes(include=[np.number])
 
 # Calcular la matriz de correlación para las variables numéricas
-correlation_matrix = data_numeric.corr()
+correlation_matrix = data_numeric.corr(method='spearman')
 
 # Visualización de la matriz de correlación
 plt.figure(figsize=(10, 8))
-sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm")
+sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", center= 0, vmin=-1, vmax=1)
 plt.title("Matriz de Correlación")
 plt.savefig(
     "../exploracion/matriz_correlacion.png"
@@ -31,13 +31,13 @@ plt.close()
 
 # Visualización de la relación entre la marca y el precio
 plt.figure(figsize=(10, 6))
-sns.boxplot(x="Precio(€)", y="Marca", data=data, palette="coolwarm")
+sns.boxplot(x="Precio(€)", y="Marca", hue="Marca", data=data, palette="coolwarm", legend=False)
 plt.title("Precio por Marca")
 plt.xticks(rotation=45)
 plt.savefig(
     "../exploracion/precio_por_marca.png"
 )  # Guardar la figura en la carpeta de exploracion
-plt.show()  # Mostrar la figura
+plt.show()
 plt.close()
 
 # Precio según Edad, tipo de Carburante y transmisión
