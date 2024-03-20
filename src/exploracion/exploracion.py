@@ -12,16 +12,27 @@ print(data.describe())
 # Conteo de valores únicos en variables categóricas
 print(data.select_dtypes(include=["object"]).nunique())
 
+# Visualización de las distribuciones de las variables numéricas
+for column in data.select_dtypes(include=[np.number]).columns:
+    plt.figure(figsize=(10, 6))
+    sns.histplot(
+        data[column], kde=True, bins=30
+    )  # KDE (Kernel Density Estimate) agrega una línea de densidad
+    plt.title(f"Distribución de {column}")
+    plt.savefig(f"../exploracion/distribucion_{column}.png")  # Guardar la figura
+    plt.show()
+    plt.close()
+
 # Preparación para el análisis exploratorio
 # Seleccionar solo las columnas numéricas para calcular correlaciones
 data_numeric = data.select_dtypes(include=[np.number])
 
 # Calcular la matriz de correlación para las variables numéricas
-correlation_matrix = data_numeric.corr(method='spearman')
+correlation_matrix = data_numeric.corr(method="spearman")
 
 # Visualización de la matriz de correlación
 plt.figure(figsize=(10, 8))
-sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", center= 0, vmin=-1, vmax=1)
+sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", center=0, vmin=-1, vmax=1)
 plt.title("Matriz de Correlación")
 plt.savefig(
     "../exploracion/matriz_correlacion.png"
@@ -31,7 +42,9 @@ plt.close()
 
 # Visualización de la relación entre la marca y el precio
 plt.figure(figsize=(10, 6))
-sns.boxplot(x="Precio(€)", y="Marca", hue="Marca", data=data, palette="coolwarm", legend=False)
+sns.boxplot(
+    x="Precio(€)", y="Marca", hue="Marca", data=data, palette="coolwarm", legend=False
+)
 plt.title("Precio por Marca")
 plt.xticks(rotation=45)
 plt.savefig(
