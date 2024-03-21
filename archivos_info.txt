@@ -1,0 +1,2 @@
+﻿1Jz3QoXD6ir_WsxDfZ0l1UHdiKnw1Ttt7, datosCrudos.json, src/adquisicion/datosCrudos.json
+1lcbzZwNn--bQ7iCwJUltM5v7gPto5N5W, datosProcesados.parquet, src/limpieza/datosProcesados.parquet
