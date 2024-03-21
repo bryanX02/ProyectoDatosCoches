@@ -24,18 +24,10 @@ import time
 def web_driver():
     options = webdriver.ChromeOptions()
     options.add_argument("--no-sandbox")  # Deshabilita el limitador
-    options.add_argument(
-        "--headless"
-    )  # Deshabilita la ventana y se realiza en un segundo plano
-    options.add_argument(
-        "--disable-gpu"
-    )  # Deshabilita la GPU para evitar problemas en algunas webs
-    options.add_argument(
-        "--window-size=1920, 2160"
-    )  # Tamaño de la ventana (en segundo plano)
-    options.add_argument(
-        "--disable-dev-shm-usage"
-    )  # Deshabilita los archivos temporales
+    options.add_argument("--headless")  # Deshabilita la ventana y se realiza en un segundo plano
+    options.add_argument("--disable-gpu")  # Deshabilita la GPU para evitar problemas en algunas webs
+    options.add_argument("--window-size=1920, 2160")  # Tamaño de la ventana (en segundo plano)
+    options.add_argument("--disable-dev-shm-usage")  # Deshabilita los archivos temporales
     return webdriver.Chrome(options=options)
 
 
@@ -57,9 +49,7 @@ def scraper(driver, num_scroll):
         time.sleep(3)
 
         # Se busca el botón y se le da clíck
-        btn = driver.find_element(
-            By.CLASS_NAME, "button___2R6qU.size-sm___3TKQS.default___1FRAY"
-        )
+        btn = driver.find_element(By.CLASS_NAME, "button___2R6qU.size-sm___3TKQS.default___1FRAY")
         btn.click()  # Se aceptan las cookies
 
     except:
@@ -73,9 +63,11 @@ def scraper(driver, num_scroll):
     screen_height = driver.execute_script("return window.screen.height;")
 
     while i <= n:
+
         # Se realiza el scroll para la siguiente página
         driver.execute_script(f"window.scrollTo(0, {screen_height * i})")
         time.sleep(scroll_pause_time)  # Tiempo de carga de la siguiente página
+
         scraperSoup = BeautifulSoup(driver.page_source, "html.parser")
         # Se sacan los coches de la página actua
         pagVehiculos = scraperSoup.find_all(
@@ -191,7 +183,7 @@ def obtener_info_vehiculo_1(vehiculo):
         "Accidentado": coche_accidentado,
     }
     df = pd.DataFrame([data])
-
+    # Añadir la fecha del dato recopilado
     return df
 
 
@@ -217,7 +209,7 @@ def main():
             )
         except:
             print(
-                f"Excepción de datos en {vehiculo.get('href')}"
+                f"Proximamente: {vehiculo.get('href')}"
             )  # solucionado problema comillas
 
     print(df_resultado)
