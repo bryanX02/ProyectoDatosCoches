@@ -6,3 +6,5 @@ webdriver-manager
 pyparrot
 seaborn
 requests
+scikit-learn
+mlflow
