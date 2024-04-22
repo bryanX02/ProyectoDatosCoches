@@ -1,20 +1,13 @@
 import pandas as pd
 from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, KFold, cross_val_score, cross_validate
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score, make_scorer
 from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
 import numpy as np
 import os
 import mlflow
 import mlflow.sklearn
-
-
-# Función para dividir los datos en entrenamiento y prueba
-def split_train_test(X, y, test_size=0.3, random_state=42):
-    return train_test_split(X, y, test_size=test_size, random_state=random_state)
-
 
 # Transformación de datos con pipelines
 def transform_data():
@@ -28,32 +21,34 @@ def transform_data():
 
     return transformer
 
-
-# Evaluación del modelo
-def evaluate_model(y_test, y_pred):
-    mae = mean_absolute_error(y_test, y_pred)
-    mse = mean_squared_error(y_test, y_pred)
-    rmse = np.sqrt(mse)
-    r2 = r2_score(y_test, y_pred)
-    print("\nResultados del modelo:")
-    print("RMSE: ", rmse)
-    print("MAE: ", mae)
-    print("R²: ", r2)
-
+# Evaluación del modelo con k-fold
+def evaluate_model_kfold(X, y, model, n_splits=5):
+    kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
+    scoring = {'MAE': make_scorer(mean_absolute_error, greater_is_better=False),
+               'MSE': make_scorer(mean_squared_error, greater_is_better=False),
+               'R2': make_scorer(r2_score)}
+    scores = cross_validate(model, X, y, cv=kf, scoring=scoring, return_train_score=False)
+    print("\nResultados de validación cruzada:")
+    print("RMSE: ", np.sqrt(-np.mean(scores['test_MSE'])))
+    print("MAE: ", -np.mean(scores['test_MAE']))
+    print("R²: ", np.mean(scores['test_R2']))
 
 # Registro y seguimiento con MLflow
-def run_mlflow(X_train, y_train, X_test, y_test, model, title="Regresión Lineal Múltiple"):
+def run_mlflow(X, y, model, title="Regresión Lineal Múltiple"):
     os.environ['MLFLOW_TRACKING_URI'] = 'sqlite:///mlflow.db'
     mlflow.set_experiment(title)
 
     with mlflow.start_run():
-        model.fit(X_train, y_train)
-        y_pred = model.predict(X_test)
-        mlflow.sklearn.log_model(model, "model")
-        mlflow.log_params({"model_type": "LinearRegression"})
-        mlflow.log_metrics({"MAE": mean_absolute_error(y_test, y_pred), "MSE": mean_squared_error(y_test, y_pred),
-                            "R2": r2_score(y_test, y_pred)})
-
+        kf = KFold(n_splits=5, shuffle=True, random_state=42)
+        for train_index, test_index in kf.split(X):
+            X_train, X_test = X[train_index], X[test_index]
+            y_train, y_test = y[train_index], y[test_index]
+            model.fit(X_train, y_train)
+            y_pred = model.predict(X_test)
+            mlflow.sklearn.log_model(model, "model")
+            mlflow.log_params({"model_type": "LinearRegression"})
+            mlflow.log_metrics({"MAE": mean_absolute_error(y_test, y_pred), "MSE": mean_squared_error(y_test, y_pred),
+                                "R2": r2_score(y_test, y_pred)})
 
 # Proceso principal
 def main():
@@ -64,14 +59,10 @@ def main():
     transformer = transform_data()
     X_transformed = transformer.fit_transform(X)
 
-    X_train, X_test, y_train, y_test = split_train_test(X_transformed, y)
     reg = LinearRegression()
-    print("Iniciando entrenamiento y evaluación del modelo...")
-    run_mlflow(X_train, y_train, X_test, y_test, reg)
-
-    y_pred = reg.predict(X_test)
-    evaluate_model(y_test, y_pred)
-
+    print("Validación cruzada del modelo...")
+    evaluate_model_kfold(X_transformed, y, reg)
+    run_mlflow(X_transformed, y, reg)
 
 if __name__ == "__main__":
     main()
