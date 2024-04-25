@@ -13,6 +13,7 @@ from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSe
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.metrics import mean_squared_error, mean_absolute_error, accuracy_score
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 import mlflow
@@ -24,10 +25,10 @@ def splitTrainTest(X, y, testSize=0.3, randomState=42):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=testSize, random_state=randomState)
     return X_train, X_test, y_train, y_test
 
+
 # Función que
 # Método que aplica diversas técnicas de preprocesado para transformar los datos
 def transformData(datos):
-
     # Aplicamos OneHotEncoder a las variables categóricas (las de tipo string)
     toEncode = ["Marca", "Modelo", "Carburante", "Transmisión", "Tracción"]
     datosCat = datos[toEncode]
@@ -39,12 +40,12 @@ def transformData(datos):
 
     # También estandarizamos estos valores numéricos
     estandarizar = ["Kilometraje(Km)", "Potencia(Cv)", "Cilindrada(Cc)", "Edad(Meses)"]
-    dataTrans[estandarizar] = StandardScaler().fit_transform(dataTrans[estandarizar])
+    scaler = StandardScaler()
+    dataTrans[estandarizar] = scaler.fit_transform(dataTrans[estandarizar])
+    return dataTrans, scaler
 
-    return dataTrans
 
 def ajusteHiperparametros(X_train, y_train, model):
-
     # Definimos los hiperparámetros que se combinaran. Son 18 (ya que en este modelo se requieren muchos recursos)
     param_grid = {
         'hidden_layer_sizes': [(50, 25), (100, 50), (150, 100)],
@@ -80,14 +81,15 @@ def ajusteHiperparametros(X_train, y_train, model):
     print(random_search.best_params_)
     print("MSE en entrenamiento:", -random_search.best_score_)
 
+
 def analisisResultado(y_test, y_pred):
     mae = mean_absolute_error(y_test, y_pred)
     mse = mean_squared_error(y_test, y_pred)
     rmse = np.sqrt(y_test, y_pred)
     print("\nRMSE: ", rmse, "\n\nMAE: ", mae)
 
-def MLFlow(X_train, y_train, X_test, y_test, search, title):
 
+def MLFlow(X_train, y_train, X_test, y_test, search, title):
     # Configurar MLFlow para usar SQLite como backend
     os.environ['MLFLOW_TRACKING_URI'] = 'sqlite:///mlflow.db'
 
@@ -106,8 +108,22 @@ def MLFlow(X_train, y_train, X_test, y_test, search, title):
         mlflow.log_params(search.best_params_)
         mlflow.log_metric("MAE", mean_absolute_error(y_test, search.predict(X_test)))
 
-def main():
 
+def plotRedesNeuronales(y_test, y_pred):
+    # Diagrama de dispersión de predicciones vs. valores reales
+    print("Primeras predicciones:", y_test[:10])
+    print("Primeras predicciones:", y_pred[:10])
+    plt.figure(figsize=(10, 6))
+    plt.scatter(y_test, y_pred, alpha=0.5)
+    plt.plot([min(y_test), max(y_test)], [min(y_test), max(y_test)], color='red', linestyle='--')
+    plt.xlabel('Valores reales')
+    plt.ylabel('Predicciones')
+    plt.title('Diagrama de dispersión de predicciones vs. valores reales (GridSearch)')
+    plt.grid(True)
+    plt.show()
+
+
+def main():
     # Se cargan los datos
     data = pd.read_parquet("../limpieza/datosProcesados.parquet")
 
@@ -117,17 +133,17 @@ def main():
     # En la memoria explicamos el porque no usamos las variables "Accidentado", "Adicional" y "Primera matriculación"
 
     # Ahora aplicamos las transformaciones necesarias
-    X = transformData(X)
+    X, scaler = transformData(X)
 
     # Con los datos ya listos, separamos entre train y test
     X_train, X_test, y_train, y_test = splitTrainTest(X, y)
 
     # Generamos el modelo y estudiamos que hiperparámetros son los óptimos
     reg = MLPRegressor(max_iter=1000)
-    ajusteHiperparametros(X_train, y_train, reg)
+    # ajusteHiperparametros(X_train, y_train, reg)
 
     # Y ahora ya ajustamos el modelo con los hiperparámetros obtenidos
-    reg = MLPRegressor(hidden_layer_sizes=(150, 100), alpha=0.0001, activation='relu', random_state=42)
+    reg = MLPRegressor(hidden_layer_sizes=(150, 100), alpha=0.001, activation='relu', random_state=42, max_iter=1000)
 
     # Inicializamos la barra de progreso
     pbar = tqdm(total=reg.max_iter, desc="Entrenando modelo", position=0, leave=True)
@@ -148,14 +164,14 @@ def main():
     # Cerrar la barra de progreso
     pbar.close()
     # Evaluamos el modelo en el conjunto de prueba
-    y_pred = reg.predict(X_test.values)
+    y_pred = reg.predict(X_test)
 
     precisionTest = reg.score(X_test.values, y_test.values.ravel())
     print("Precisión del modelo (R^2):", precisionTest)
     analisisResultado(y_test, y_pred)
 
     # COMENTAR LO SIGUIENTE SI NO SE QUIERE GENERAR EL MLFLOW:
-
+    '''
     # Por último registramos el experimento con MLFlow
     # Definimos los hiperparámetros que se combinaran. Son 18 (ya que en este modelo se requieren muchos recursos)
     param_grid = {
@@ -175,7 +191,9 @@ def main():
     random_search = GridSearchCV(model, param_grid=param_grid, cv=3)
     MLFlow(X_train, y_train, X_test, y_test, random_search, "Grid Search")
     random_search = RandomizedSearchCV(model, param_distributions=param_range, cv=3, n_iter=10)
-    MLFlow(X_train, y_train, X_test, y_test, random_search, "Random Search")
+    MLFlow(X_train, y_train, X_test, y_test, random_search, "Random Search")'''
+    y_pred = y_pred.reshape(-1, 1)
+    plotRedesNeuronales(y_test, y_pred)
 
 
 if __name__ == "__main__":
