@@ -5,6 +5,20 @@ from sklearn.model_selection import GridSearchCV, KFold
 from tqdm import tqdm
 from funciones import *
 import numpy as np
+from sklearn.decomposition import PCA
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+
+def apply_pca(X, n_components=20):
+    pca = PCA(n_components=n_components)
+    X_pca = pca.fit_transform(X)
+    return X_pca, pca
+
+def calculate_vif(X_pca):
+    vif_data = pd.DataFrame()
+    vif_data['VIF'] = [variance_inflation_factor(X_pca, i) for i in range(X_pca.shape[1])]
+    vif_data['feature'] = range(X_pca.shape[1])
+    return vif_data
+
 
 def ajusteHiperparametros(X_train, y_train, X_test, y_test, model, mlflow = False):
 
@@ -34,41 +48,31 @@ def ajusteHiperparametros(X_train, y_train, X_test, y_test, model, mlflow = Fals
         MLFlow(X_train, y_train.ravel(), X_test, y_test.ravel(), grid_search, "Grid Search")
         print("Grid listo")
 
+
 def main():
-
-    # Id de los datos procesados en formato parquet, almacenados en drive
     ID_DATOS = '1N9ucOBFVTi1A-LOU1UyqmU_-pUwR40SY'
-
-    # Se cargan los datos
     data = cargar_parquet_drive(ID_DATOS)
-
-    # Separación entre variables de entrada y objetivo
     X = data.drop(columns=["Precio(€)", "Accidentado", "Adicional", "Primera matriculación"])
-    y = data[['Precio(€)']]
-    # En la memoria explicamos el porqué no usamos las variables "Accidentado", "Adicional" y "Primera matriculación"
+    y = data['Precio(€)']
 
-    # Ahora aplicamos las transformaciones necesarias
-    X, scaler = transformData(X)
-    X = X.to_numpy()
-    y = y.to_numpy()
+    # Transformación y PCA
+    X_transformed, scaler = transformData(X)
+    X_pca, pca = apply_pca(X_transformed)
+    vif_data = calculate_vif(pd.DataFrame(X_pca))
+    print(vif_data)
 
-    # Con los datos ya listos, separamos entre train y test
-    X_train, X_test, y_train, y_test = splitTrainTest(X, y)
+    X_train, X_test, y_train, y_test = splitTrainTest(X_pca, y)
 
-    # Generamos el modelo y estudiamos que hiperparámetros son los óptimos, a la vez que guardamos el proceso en MLFlow
     reg = LinearRegression()
     ajusteHiperparametros(X_train, y_train, X_test, y_test, reg, mlflow=True)
 
-    # Y ahora ya ajustamos el modelo con los hiperparámetros obtenidos
-    reg = LinearRegression(fit_intercept=False, copy_X=True) # Añadir mejores hiperparámetros
+    # Uso de los mejores parámetros (se debe extraer de GridSearch si necesario)
+    reg = LinearRegression(fit_intercept=True, copy_X= False)
     reg.fit(X_train, y_train)
-    # Evaluamos el modelo en el conjunto de prueba
     y_pred = reg.predict(X_test)
-
-    precisionTest = reg.score(X_test, y_test.ravel())
-    print("Precisión del modelo (R^2):", precisionTest)
+    print("Precisión del modelo (R^2):", reg.score(X_test, y_test))
     analisisResultado(y_test, y_pred)
-    plotModelo(y_test, y_pred, "Linear Regression")
+    plotModelo(y_test, y_pred, "Linear Regression with PCA")
 
 
 if __name__ == "__main__":
