@@ -59,7 +59,6 @@ def main():
     X_transformed, scaler = transformData(X)
     X_pca, pca = apply_pca(X_transformed)
     vif_data = calculate_vif(pd.DataFrame(X_pca))
-    print(vif_data)
 
     X_train, X_test, y_train, y_test = splitTrainTest(X_pca, y)
 
