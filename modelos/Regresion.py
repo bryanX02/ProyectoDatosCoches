@@ -66,12 +66,12 @@ def main():
     ajusteHiperparametros(X_train, y_train, X_test, y_test, reg, mlflow=True)
 
     # Uso de los mejores parámetros (se debe extraer de GridSearch si necesario)
-    reg = LinearRegression(fit_intercept=True, copy_X= False)
+    reg = LinearRegression(fit_intercept=False, copy_X= True)
     reg.fit(X_train, y_train)
     y_pred = reg.predict(X_test)
     print("Precisión del modelo (R^2):", reg.score(X_test, y_test))
     analisisResultado(y_test, y_pred)
-    plotModelo(y_test, y_pred, "Linear Regression with PCA")
+    plotModelo(y_test, y_pred, "Linear Regression")
 
 
 if __name__ == "__main__":
