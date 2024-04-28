@@ -1,7 +1,7 @@
 # Librerias
 from scipy.stats import loguniform
 from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, KFold
+from sklearn.model_selection import GridSearchCV, KFold
 from tqdm import tqdm
 from funciones import *
 import numpy as np
@@ -10,12 +10,8 @@ def ajusteHiperparametros(X_train, y_train, X_test, y_test, model, mlflow = Fals
 
     # Definimos los hiperparámetros que se combinaran. Son 108 combinaciones
     param_grid = {
-        # Añadir hiperparámetros
-    }
-
-    # Definición de hiperparámetros a probar
-    param_range = {
-        # Añadir hiperparámetros
+        'fit_intercept': [True, False],
+        'copy_X': [True, False]
     }
 
     # Definimos la validación cruzada
@@ -23,9 +19,6 @@ def ajusteHiperparametros(X_train, y_train, X_test, y_test, model, mlflow = Fals
 
     # Búsqueda en rejilla
     grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=cv)
-    # Búsqueda aleatoria (limitamos la busqueda a 100
-    random_search = RandomizedSearchCV(estimator=model, param_distributions=param_range, n_iter=100, cv=cv)
-
     if not mlflow:
 
         grid_search.fit(X_train, y_train.ravel())
@@ -35,20 +28,11 @@ def ajusteHiperparametros(X_train, y_train, X_test, y_test, model, mlflow = Fals
         print(grid_search.best_params_)
         print("MSE en entrenamiento:", -grid_search.best_score_)
 
-        random_search.fit(X_train, y_train.ravel())
-
-        # Resultados de la búsqueda aleatoria
-        print("\nMejores hiperparámetros encontrados mediante búsqueda aleatoria:")
-        print(random_search.best_params_)
-        print("MSE en entrenamiento:", -random_search.best_score_)
-
     else:
 
         # Realizamos la busqueda y la guardamos en MLFlow
         MLFlow(X_train, y_train.ravel(), X_test, y_test.ravel(), grid_search, "Grid Search")
         print("Grid listo")
-        MLFlow(X_train, y_train.ravel(), X_test, y_test.ravel(), grid_search, "Random Search")
-
 
 def main():
 
@@ -76,7 +60,7 @@ def main():
     ajusteHiperparametros(X_train, y_train, X_test, y_test, reg, mlflow=True)
 
     # Y ahora ya ajustamos el modelo con los hiperparámetros obtenidos
-    reg = LinearRegression() # Añadir mejores hiperparámetros
+    reg = LinearRegression(fit_intercept=False, copy_X=True) # Añadir mejores hiperparámetros
     reg.fit(X_train, y_train)
     # Evaluamos el modelo en el conjunto de prueba
     y_pred = reg.predict(X_test)
