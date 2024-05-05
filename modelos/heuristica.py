@@ -1,45 +1,55 @@
-import pandas as pd
 from funciones import cargar_parquet_drive
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+import numpy as np
 
+# Carga de datos
 ID_DATOS = '1N9ucOBFVTi1A-LOU1UyqmU_-pUwR40SY'
-
 df = cargar_parquet_drive(ID_DATOS)
-# Calcular el precio promedio por marca y modelo
-precio_base = df.groupby(['Marca', 'Modelo'])['Precio(€)'].mean()
+
+
+# Dividir los datos en conjunto de entrenamiento y de prueba
+train_df, test_df = train_test_split(df, test_size=0.2, random_state=42)  # 80% entrenamiento, 20% prueba
+
+# Calcular el precio base para cada marca y modelo en el conjunto de entrenamiento
+precio_base = train_df.groupby(['Marca', 'Modelo'])['Precio(€)'].mean().to_dict()
 
 
 # Función para calcular el precio estimado
-def estimar_precio(marca, modelo, edad, kilometraje, potencia, transmision):
+def estimar_precio(row, precio_base):
     # Obtener el precio base
-    try:
-        precio = precio_base[marca, modelo]
-    except KeyError:
-        precio = df['Precio(€)'].mean()  # Usar el promedio general si no hay datos específicos para la marca y modelo
+    clave = (row['Marca'], row['Modelo'])
+    if clave in precio_base:
+        precio = precio_base[clave]
+    else:
+        precio = train_df['Precio(€)'].mean()
 
     # Ajustar por la edad del coche
-    precio *= (1 - 0.1 * edad)
+    precio *= (1 - 0.02 * row['Edad(Meses)'] / 12)
 
     # Ajustar por el kilometraje
-    precio -= (kilometraje / 10000) * (0.01 * precio_base[marca, modelo])
+    precio -= (row['Kilometraje(Km)'] / 10000) * (0.01 * precio)
 
     # Ajustar por la potencia
-    if potencia > df['Potencia(Cv)'].quantile(0.75):
-        precio *= 1.05
+    if row['Potencia(Cv)'] > train_df['Potencia(Cv)'].quantile(0.75):
+        precio *= 1.22
 
     # Ajustar por el tipo de transmisión
-    if transmision == 'automática':
-        precio *= 1.53
+    if row['Transmisión'] == 'automática':
+        precio *= 1.07
 
     return round(precio, 2)
 
 
-# Ejemplo de uso
-marca = 'BMW'
-modelo = 'Serie 1'
-edad = 5
-kilometraje = 50000
-potencia = 120
-transmision = 'automática'
+# Aplicar la función al conjunto de pruebas
+test_df['Precio Estimado'] = test_df.apply(lambda row: estimar_precio(row, precio_base), axis=1)
 
-precio_estimado = estimar_precio(marca, modelo, edad, kilometraje, potencia, transmision)
-print(f"El precio estimado para el {marca} {modelo} es de €{precio_estimado}")
+# Comparar resultados
+print(test_df[['Marca', 'Modelo', 'Precio(€)', 'Precio Estimado']])
+
+mae = mean_absolute_error(test_df['Precio(€)'], test_df['Precio Estimado'])
+print(f"Error Absoluto Medio (MAE): €{mae:.2f}")
+
+# Calcular R²
+r2 = r2_score(test_df['Precio(€)'], test_df['Precio Estimado'])
+print(f"R-cuadrado (R²): {r2:.2f}")
