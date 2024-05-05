@@ -58,14 +58,14 @@ def limpieza(df_resultado):
 def main():
 
     # Cargamos los datos
-    df_resultado = pd.read_json("../adquisicion/datosCrudos.json", orient="index")
+    df_resultado = pd.read_json("../adquisicion/datosCrudos2.json", orient="index")
 
     # Ejecutamos la limpieza
     df_resultado = limpieza(df_resultado)
 
     # Guardamos los datos procesados en formato parquet
     # (Puede ser necesario instalar las dependencias pyarrow y fastparquet)
-    df_resultado.to_parquet("datosProcesados.parquet", index=0)
+    df_resultado.to_parquet("datosProcesados2.parquet", index=0)
 
 
 if __name__ == "__main__":

@@ -215,7 +215,7 @@ def main():
     print(df_resultado)
 
     # El data frame se exporta a un archivo json
-    df_resultado.to_json("datosCrudos.json", "index")
+    df_resultado.to_json("datosCrudos2.json", "index")
 
 
 if __name__ == "__main__":
