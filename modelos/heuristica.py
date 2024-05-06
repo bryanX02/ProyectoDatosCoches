@@ -1,15 +1,12 @@
 from funciones import cargar_parquet_drive
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-import numpy as np
+import pandas as pd
+from sklearn.metrics import mean_absolute_error, r2_score
+
 
 # Carga de datos
 ID_DATOS = '1N9ucOBFVTi1A-LOU1UyqmU_-pUwR40SY'
-df = cargar_parquet_drive(ID_DATOS)
-
-
-# Dividir los datos en conjunto de entrenamiento y de prueba
-train_df, test_df = train_test_split(df, test_size=0.2, random_state=42)  # 80% entrenamiento, 20% prueba
+train_df = cargar_parquet_drive(ID_DATOS)
+test_df = pd.read_parquet('../limpieza/datosProcesados2.parquet')
 
 # Calcular el precio base para cada marca y modelo en el conjunto de entrenamiento
 precio_base = train_df.groupby(['Marca', 'Modelo'])['Precio(€)'].mean().to_dict()
@@ -47,6 +44,7 @@ test_df['Precio Estimado'] = test_df.apply(lambda row: estimar_precio(row, preci
 # Comparar resultados
 print(test_df[['Marca', 'Modelo', 'Precio(€)', 'Precio Estimado']])
 
+# Calcular Mae
 mae = mean_absolute_error(test_df['Precio(€)'], test_df['Precio Estimado'])
 print(f"Error Absoluto Medio (MAE): €{mae:.2f}")
 
