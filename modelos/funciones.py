@@ -33,16 +33,16 @@ def transformData(datos):
     toEncode = ["Marca", "Modelo", "Carburante", "Transmisión", "Tracción"]
     datosCat = datos[toEncode]
     encoder = OneHotEncoder(drop='if_binary', sparse_output=False)
-    datosEncodes = encoder.fit_transform(datosCat)
+    encoder = encoder.fit(datosCat)
     features = encoder.get_feature_names_out()
-    datosCat = pd.DataFrame(datosEncodes, columns=features)
+    datosCat = pd.DataFrame(encoder.transform(datosCat), columns=features)
     dataTrans = pd.concat([datos.drop(columns=toEncode), datosCat], axis=1)
 
     # También estandarizamos estos valores numéricos
     estandarizar = ["Kilometraje(Km)", "Potencia(Cv)", "Cilindrada(Cc)", "Edad(Meses)"]
     scaler = StandardScaler()
     dataTrans[estandarizar] = scaler.fit_transform(dataTrans[estandarizar])
-    return dataTrans, scaler
+    return dataTrans, encoder
 
 
 def plotModelo(y_test, y_pred, nombre_modelo):

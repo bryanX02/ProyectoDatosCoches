@@ -88,7 +88,7 @@ def main():
 
     # Generamos el modelo y estudiamos que hiperparámetros son los óptimos, a la vez que guardamos el proceso en MLFlow
     reg = MLPRegressor()
-    ajusteHiperparametros(X_train, y_train, X_test, y_test, reg, mlflow=True)
+    #ajusteHiperparametros(X_train, y_train, X_test, y_test, reg, mlflow=True)
 
     # Y ahora ya ajustamos el modelo con los hiperparámetros obtenidos
     reg = MLPRegressor(hidden_layer_sizes=(150, 100), alpha=0.001, activation='relu', random_state=42, max_iter=1000)
